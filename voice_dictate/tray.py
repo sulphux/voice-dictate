@@ -44,6 +44,7 @@ class TrayController(QObject):
     installRequested       = Signal()
     uninstallRequested     = Signal()
     quitRequested          = Signal()
+    historyPasteRequested  = Signal(str)
 
     def __init__(
         self,
@@ -62,6 +63,7 @@ class TrayController(QObject):
         self._autostart = autostart
         self._is_installed = is_installed
         self._state = IDLE
+        self._history: list[str] = []   # last 10 transcriptions
 
         self.tray = QSystemTrayIcon()
         self.tray.setIcon(_make_icon())
@@ -117,7 +119,20 @@ class TrayController(QObject):
 
         m.addSeparator()
 
-        autostart_action = QAction(
+        # Transcription history submenu
+        history_menu = m.addMenu("Historia transkrypcji")
+        if self._history:
+            for i, entry in enumerate(reversed(self._history), 1):
+                label = entry if len(entry) <= 50 else entry[:47] + "…"
+                a = QAction(f"{i}. {label}", history_menu)
+                a.triggered.connect(lambda _=False, t=entry: self.historyPasteRequested.emit(t))
+                history_menu.addAction(a)
+        else:
+            empty = QAction("(brak nagrań)", history_menu)
+            empty.setEnabled(False)
+            history_menu.addAction(empty)
+
+        m.addSeparator()= QAction(
             "✓ Uruchamiaj przy starcie" if self._autostart else "Uruchamiaj przy starcie", m
         )
         autostart_action.triggered.connect(self.autostartToggled.emit)
@@ -141,6 +156,14 @@ class TrayController(QObject):
         return {IDLE: "Nagrywaj", RECORDING: "Stop", TRANSCRIBING: "Transkrypcja...", LOADING: "Ładowanie..."}.get(
             self._state, "Nagrywaj"
         )
+
+    def add_to_history(self, text: str) -> None:
+        """Add transcribed text to history (max 10 entries) and rebuild menu."""
+        if text:
+            self._history.append(text)
+            if len(self._history) > 10:
+                self._history.pop(0)
+            self._build_menu()
 
     def set_state(self, state: str) -> None:
         self._state = state

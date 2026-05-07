@@ -78,9 +78,22 @@ def run() -> int:
 
     def on_transcribed(text: str) -> None:
         if text:
+            tray.add_to_history(text)
             tray.show_message("Wklejono ✓", text if len(text) <= 80 else text[:77] + "…")
 
     engine.transcribed.connect(on_transcribed)
+
+    def on_history_paste(text: str) -> None:
+        import pyperclip, keyboard, time
+        pyperclip.copy(text)
+        time.sleep(0.05)
+        try:
+            keyboard.send("ctrl+v")
+        except Exception:
+            pass
+        tray.show_message("Wklejono z historii", text if len(text) <= 80 else text[:77] + "…")
+
+    tray.historyPasteRequested.connect(on_history_paste)
 
     def on_error(msg: str) -> None:
         print(f"[error] {msg}")

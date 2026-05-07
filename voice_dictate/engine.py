@@ -227,11 +227,7 @@ class DictationEngine(QObject):
 def _paste(text: str) -> None:
     import logging
     logging.info(f"[engine] Pasting: '{text[:60]}'")
-    prev = None
-    try:
-        prev = pyperclip.paste()
-    except Exception:
-        pass
+    # Copy to clipboard FIRST — text stays there even if paste fails
     pyperclip.copy(text)
     time.sleep(0.05)
     try:
@@ -239,9 +235,5 @@ def _paste(text: str) -> None:
         logging.info("[engine] Paste sent OK")
     except Exception as e:
         logging.error(f"[engine] Paste failed: {e}")
-    time.sleep(0.15)
-    if prev is not None:
-        try:
-            pyperclip.copy(prev)
-        except Exception:
-            pass
+    # NOTE: we intentionally do NOT restore the previous clipboard content
+    # so the user can always manually paste (Ctrl+V) if auto-paste missed the target
