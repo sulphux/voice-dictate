@@ -1,5 +1,7 @@
-"""Floating mic widget: frameless, always-on-top, draggable."""
+"""Floating mic widget: frameless, always-on-top, draggable, never steals focus."""
 from __future__ import annotations
+
+import ctypes
 
 from PySide6.QtCore import Qt, QTimer, QPoint, Signal
 from PySide6.QtGui import QPainter, QColor, QPen, QFont
@@ -9,6 +11,10 @@ from voice_dictate.engine import IDLE, RECORDING, TRANSCRIBING, LOADING
 
 DRAG_THRESHOLD = 5
 SIZE = 64
+
+# WinAPI extended style — prevents window from stealing focus on click
+_WS_EX_NOACTIVATE = 0x08000000
+_GWL_EXSTYLE = -20
 
 
 class MicWidget(QWidget):
@@ -21,8 +27,10 @@ class MicWidget(QWidget):
             Qt.FramelessWindowHint
             | Qt.WindowStaysOnTopHint
             | Qt.Tool
+            | Qt.WindowDoesNotAcceptFocus   # Qt-level: no focus on click
         )
         self.setAttribute(Qt.WA_TranslucentBackground, True)
+        self.setAttribute(Qt.WA_ShowWithoutActivating, True)  # don't activate on show
         self.setFixedSize(SIZE, SIZE)
 
         self._state = IDLE
@@ -37,6 +45,16 @@ class MicWidget(QWidget):
         self._timer.start(40)
 
         self.setToolTip("Klik = nagrywaj")
+
+    def showEvent(self, ev) -> None:
+        super().showEvent(ev)
+        # Apply WS_EX_NOACTIVATE at WinAPI level so clicking never steals focus
+        try:
+            hwnd = int(self.winId())
+            ex = ctypes.windll.user32.GetWindowLongW(hwnd, _GWL_EXSTYLE)
+            ctypes.windll.user32.SetWindowLongW(hwnd, _GWL_EXSTYLE, ex | _WS_EX_NOACTIVATE)
+        except Exception:
+            pass
 
     def set_state(self, state: str) -> None:
         self._state = state
