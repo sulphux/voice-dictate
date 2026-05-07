@@ -17,6 +17,7 @@ _APP_NAME = "Voice Dictate"
 _APP_ID = "VoiceDictate"
 _INSTALL_DIR = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "Programs" / _APP_ID
 _START_MENU = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming")) / "Microsoft" / "Windows" / "Start Menu" / "Programs"
+_DESKTOP = Path(os.environ.get("USERPROFILE", Path.home())) / "Desktop"
 _UNINSTALL_KEY = rf"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{_APP_ID}"
 
 
@@ -41,11 +42,20 @@ def install(silent: bool = False) -> bool:
         print(f"[installer] copy failed: {e}")
         return False
 
-    # Start Menu shortcut via PowerShell COM
+    desc = "Voice dictation widget for Windows"
+
+    # Start Menu shortcut
     _create_shortcut(
         target=str(dest_exe),
         shortcut_path=str(_START_MENU / f"{_APP_NAME}.lnk"),
-        description="Voice dictation widget for Windows",
+        description=desc,
+    )
+
+    # Desktop shortcut
+    _create_shortcut(
+        target=str(dest_exe),
+        shortcut_path=str(_DESKTOP / f"{_APP_NAME}.lnk"),
+        description=desc,
     )
 
     # Register in Add/Remove Programs
@@ -53,7 +63,7 @@ def install(silent: bool = False) -> bool:
 
     if not silent:
         print(f"[installer] Installed to {dest_exe}")
-        print(f"[installer] Start Menu shortcut created.")
+        print(f"[installer] Start Menu + Desktop shortcuts created.")
 
     # Launch installed version
     subprocess.Popen([str(dest_exe)], creationflags=subprocess.DETACHED_PROCESS)
