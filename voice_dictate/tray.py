@@ -132,7 +132,8 @@ class TrayController(QObject):
             empty.setEnabled(False)
             history_menu.addAction(empty)
 
-        m.addSeparator()= QAction(
+        m.addSeparator()
+        autostart_action = QAction(
             "✓ Uruchamiaj przy starcie" if self._autostart else "Uruchamiaj przy starcie", m
         )
         autostart_action.triggered.connect(self.autostartToggled.emit)
