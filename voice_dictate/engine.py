@@ -72,8 +72,11 @@ class _TranscribeWorker(QThread):
         self.language = language
 
     def run(self) -> None:
+        import logging
+        logging.info(f"[engine] Transcribing audio ({len(self.audio) if self.audio is not None else 0} samples)")
         try:
             if self.audio is None or len(self.audio) < SAMPLE_RATE * 0.25:
+                logging.info("[engine] Audio too short, skipping")
                 self.done.emit("")
                 return
             segments, _info = self.model.transcribe(
@@ -84,8 +87,10 @@ class _TranscribeWorker(QThread):
                 condition_on_previous_text=False,
             )
             text = " ".join(s.text.strip() for s in segments).strip()
+            logging.info(f"[engine] Transcription OK: '{text[:80]}'")
             self.done.emit(text)
         except Exception as e:
+            logging.error(f"[engine] Transcription FAILED: {e}")
             self.failed.emit(str(e))
 
 
@@ -99,12 +104,16 @@ class _ModelLoader(QThread):
         self.use_gpu = use_gpu
 
     def run(self) -> None:
+        import logging
+        logging.info(f"[engine] Loading model: {self.model_size}")
         try:
             from faster_whisper import WhisperModel
             device = "cuda" if self.use_gpu else "cpu"
             compute = "float16" if self.use_gpu else "int8"
             self.loaded.emit(WhisperModel(self.model_size, device=device, compute_type=compute))
+            logging.info(f"[engine] Model loaded OK: {self.model_size}")
         except Exception as e:
+            logging.error(f"[engine] Model load FAILED: {e}")
             self.failed.emit(str(e))
 
 
@@ -205,6 +214,8 @@ class DictationEngine(QObject):
 
 
 def _paste(text: str) -> None:
+    import logging
+    logging.info(f"[engine] Pasting: '{text[:60]}'")
     prev = None
     try:
         prev = pyperclip.paste()
@@ -212,7 +223,11 @@ def _paste(text: str) -> None:
         pass
     pyperclip.copy(text)
     time.sleep(0.05)
-    keyboard.send("ctrl+v")
+    try:
+        keyboard.send("ctrl+v")
+        logging.info("[engine] Paste sent OK")
+    except Exception as e:
+        logging.error(f"[engine] Paste failed: {e}")
     time.sleep(0.15)
     if prev is not None:
         try:

@@ -34,11 +34,11 @@ def main() -> None:
 
     exe = ROOT / "dist" / "voice_dictate.exe"
     if exe.exists():
-        print(f"\n✅  Build successful: {exe}")
+        print(f"\n[OK] Build successful: {exe}")
         print(f"   Size: {exe.stat().st_size / 1_048_576:.1f} MB")
         print(f"\nTo install:\n  {exe} --install\n\nTo run without installing:\n  {exe}\n")
     else:
-        print("\n❌  Build failed — exe not found")
+        print("\n[FAIL] Build failed -- exe not found")
         sys.exit(1)
 
 

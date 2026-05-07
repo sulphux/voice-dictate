@@ -2,7 +2,21 @@
 from __future__ import annotations
 
 import argparse
+import logging
+import os
 import sys
+import traceback
+
+# Log to APPDATA\VoiceDictate\app.log
+_log_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "VoiceDictate")
+os.makedirs(_log_dir, exist_ok=True)
+logging.basicConfig(
+    filename=os.path.join(_log_dir, "app.log"),
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    encoding="utf-8",
+)
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 
 def main() -> None:
@@ -32,9 +46,18 @@ def main() -> None:
         return
 
     # Normal GUI run
-    from voice_dictate.app import run
-    sys.exit(run())
+    logging.info("Starting Voice Dictate GUI")
+    try:
+        from voice_dictate.app import run
+        sys.exit(run())
+    except Exception:
+        logging.exception("Fatal error in run()")
+        raise
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        logging.exception("Fatal error in main()")
+        raise

@@ -82,15 +82,19 @@ class GlobalHotkey(QThread):
         return self._ok
 
     def run(self) -> None:
+        import logging
         if not self._ok:
             return
         user32 = ctypes.windll.user32
         if not user32.RegisterHotKey(None, self._ID, self._mods, self._vk):
-            print(f"[hotkey] RegisterHotKey failed for {self._hotkey!r} (err={ctypes.GetLastError()})")
+            err = ctypes.GetLastError()
+            logging.error(f"[hotkey] RegisterHotKey failed for {self._hotkey!r} (err={err})")
             return
+        logging.info(f"[hotkey] Registered: {self._hotkey!r} (mods={self._mods:#x} vk={self._vk:#x})")
         msg = wintypes.MSG()
         while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) != 0:
             if msg.message == WM_HOTKEY and msg.wParam == self._ID:
+                logging.debug("[hotkey] triggered")
                 self.triggered.emit()
             user32.TranslateMessage(ctypes.byref(msg))
             user32.DispatchMessageW(ctypes.byref(msg))
