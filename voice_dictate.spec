@@ -14,6 +14,8 @@ a = Analysis(
     binaries=[],
     datas=[
         (str(root / "voice_dictate" / "resources" / "icon.ico"), "voice_dictate/resources"),
+        # faster_whisper VAD model — required for vad_filter=True
+        ("C:/Users/laptop/miniconda3/Lib/site-packages/faster_whisper/assets", "faster_whisper/assets"),
     ],
     hiddenimports=[
         "voice_dictate",

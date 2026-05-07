@@ -174,27 +174,38 @@ class DictationEngine(QObject):
 
     @Slot()
     def toggle(self) -> None:
+        import logging
+        logging.info(f"[engine] toggle() called, state={self._state}")
         if self._state == RECORDING:
             self.stop()
         elif self._state == IDLE:
             self.start()
+        else:
+            logging.warning(f"[engine] toggle() ignored — state={self._state}")
 
     @Slot()
     def start(self) -> None:
+        import logging
         if self._state != IDLE or self._model is None:
+            logging.warning(f"[engine] start() ignored — state={self._state}, model={self._model is not None}")
             return
         try:
             self._recorder.start()
             self._set_state(RECORDING)
+            logging.info("[engine] Recording started")
         except Exception as e:
+            logging.error(f"[engine] Recording start failed: {e}")
             self.error.emit(f"Recording failed: {e}")
 
     @Slot()
     def stop(self) -> None:
+        import logging
         if self._state != RECORDING:
+            logging.warning(f"[engine] stop() ignored — state={self._state}")
             return
         audio = self._recorder.stop()
         self._set_state(TRANSCRIBING)
+        logging.info("[engine] Recording stopped, starting transcription")
         self._worker = _TranscribeWorker(self._model, audio, self.language)
         self._worker.done.connect(self._on_transcribed)
         self._worker.failed.connect(self._on_transcribe_failed)
